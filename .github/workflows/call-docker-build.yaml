@@ -27,11 +27,30 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Docker meta
+        id: docker_meta #to access the output of metadata-action
+        uses: docker/metadata-action@v3
+        with:
+          images: edengoldstein/httpenv_eden
+
+          flavor: |
+            latest=false #never generate latest.
+          tags: | #set the rules to generate the tags and labels. 
+            type=raw,value=04
+            type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=ref,event=pr
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            
+          
       - name: Docker build
         uses: docker/build-push-action@v2
         with:
           push: ${{ github.event_name != 'pull_request' }} 
-          tags: edengoldstein/httpenv_eden:latest
+          tags: ${{ steps.docker_meta.outputs.tags }} #give a tags & labels that was generated automatically
+          labels:  ${{ steps.docker_meta.outputs.labels }}
+          #tags: edengoldstein/httpenv_eden:latest
           
           ##cache the image layer in githb cache
           cache-from: type=gha
@@ -39,6 +58,7 @@ jobs:
 
           #build the image in multiple platform
           platforms: linux/amd64,linux/arm64,linux/arm/v7
+          
           
 
         
