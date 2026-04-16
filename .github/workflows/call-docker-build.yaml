@@ -14,11 +14,18 @@ jobs:
     name: Build Image
     runs-on: ubuntu-latest
 
-    permissions:
+    permissions: 
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+
+    #permissions:
       pull-requests: write # needed to create and update comments in PRs
 
     
     steps:
+
+      - name: Checkout git repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
       ##enable built to multiple platform by set up qemu:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -32,9 +39,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-
-
 
 
         #build the image without push to dockerhub
@@ -56,6 +60,24 @@ jobs:
           image-ref: ${{ github.run_id }}
           exit-code: 0
           format: table 
+
+        #scan and upload the result to github securitry a feature in repo that allows to see vulnerabilities in code 
+      - name: Run Trivy for HIGH,CRITICAL CVEs and report (blocking)
+        uses: aquasecurity/trivy-action@264c9c5e188ea085e7377fd77abd17bfbd4e5926 #master
+        with:
+          image-ref: ${{ github.run_id }}
+          exit-code: 1
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results to GitHub Security tab 
+        uses: github/codeql-action/upload-sarif@5c8a8a642e79153f5d047b10ec1cba1d1cc65699 #v3.35.1
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
 
 
       - name: Docker meta
