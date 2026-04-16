@@ -19,7 +19,7 @@ jobs:
 
     
     steps:
-      ##enable built to multiplr platform by set up qemu:
+      ##enable built to multiple platform by set up qemu:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
         
@@ -64,7 +64,7 @@ jobs:
           #build the image in multiple platform
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
-                  # If PR, put image tags in the PR comments
+        # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
       - name: Find comment for image tags
         uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e #v3.1.0
