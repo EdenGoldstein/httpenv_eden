@@ -33,6 +33,31 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+
+
+
+
+        #build the image without push to dockerhub
+      - name: Build and export to Docker
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f #v7.1.0
+        with:
+          push: false
+          load: true # Export to Docker Engine rather than pushing to a registry
+          tags: ${{ github.run_id }}
+          target: test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+          #before we push the image to docker hub we can check CVE. 
+      - name: Run Trivy for all CVEs (non-blocking)
+        uses: aquasecurity/trivy-action@264c9c5e188ea085e7377fd77abd17bfbd4e5926 #master
+        with:
+          image-ref: ${{ github.run_id }}
+          exit-code: 0
+          format: table 
+
+
       - name: Docker meta
         id: docker_meta #to access the output of metadata-action
         uses: docker/metadata-action@v3
@@ -47,8 +72,8 @@ jobs:
             type=ref,event=pr
             type=ref,event=branch
             type=semver,pattern={{version}}
-            
           
+        
       - name: Docker build
         uses: docker/build-push-action@v2
         with:
@@ -63,6 +88,8 @@ jobs:
 
           #build the image in multiple platform
           platforms: linux/amd64,linux/arm64,linux/arm/v7
+
+   
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
